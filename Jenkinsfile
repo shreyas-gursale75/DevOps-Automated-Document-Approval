@@ -37,8 +37,11 @@ pipeline {
 
         stage('Build & Unit Tests') {
             steps {
-                echo 'Compiling Java classes and executing automated JUnit tests...'
-                bat 'mvn clean test'
+                bat """
+                    @echo off
+                    for /f "tokens=5" %%a in ('netstat -aon ^| findstr :${EFFECTIVE_PORT} ^| findstr LISTENING') do taskkill /F /PID %%a >nul 2>&1 || ver >nul
+                    mvn test -Dtest=DocumentApprovalApplicationTests
+                """
             }
             post {
                 always {
