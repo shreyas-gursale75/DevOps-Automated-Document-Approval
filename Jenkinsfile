@@ -13,6 +13,8 @@ pipeline {
     }
 
     environment {
+        BUILD_ID = 'dontKillMe'
+        JENKINS_NODE_COOKIE = 'dontKillMe'
         APP_NAME = 'automated-document-approval'
         IMAGE_TAG = "v${env.BUILD_NUMBER}"
         DOCKER_REGISTRY = 'docker.io/myorg'
@@ -85,6 +87,8 @@ pipeline {
                     ) else (
                         echo Deploying Spring Boot embedded Tomcat runtime on port ${EFFECTIVE_PORT}...
                         for /f "tokens=5" %%a in ('netstat -aon ^| findstr :${EFFECTIVE_PORT} ^| findstr LISTENING') do taskkill /F /PID %%a >nul 2>&1 || ver >nul
+                        set JENKINS_NODE_COOKIE=dontKillMe
+                        set BUILD_ID=dontKillMe
                         start "DocumentApprovalApp" /B "%JAVA_HOME%\\bin\\java.exe" -Dserver.port=${EFFECTIVE_PORT} -jar target\\automated-document-approval-1.0.0.jar
                         exit /b 0
                     )
@@ -98,7 +102,7 @@ pipeline {
                 bat """
                     @echo off
                     echo Waiting for application to initialize on port ${EFFECTIVE_PORT}...
-                    timeout /t 6 /nobreak >nul
+                    ping 127.0.0.1 -n 7 >nul
                     curl -f http://localhost:${EFFECTIVE_PORT}/api/health || exit /b 1
                     echo.
                     echo Health check passed successfully!
