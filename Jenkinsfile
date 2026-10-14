@@ -110,6 +110,22 @@ pipeline {
                 """
             }
         }
+
+        stage('Automated Acceptance Tests (Selenium E2E)') {
+            steps {
+                echo 'Executing Selenium WebDriver E2E test suite against live environment...'
+                bat 'mvn test -Dtest=SeleniumE2ETests'
+            }
+            post {
+                always {
+                    echo 'Recording Selenium E2E execution results and screenshots...'
+                    archiveArtifacts artifacts: '**/target/screenshots/*.png', allowEmptyArchive: true
+                }
+                failure {
+                    echo '[QUALITY GATE BLOCKED] Acceptance tests failed! Deployment blocked.'
+                }
+            }
+        }
     }
 
     post {
