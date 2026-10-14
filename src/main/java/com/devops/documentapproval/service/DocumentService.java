@@ -50,8 +50,7 @@ public class DocumentService {
 
     public Document submitForApproval(String id, String actor) {
         Document document = getDocumentById(id);
-        // [DELIBERATE DEFECT FOR PHASE 10 QUALITY GATE DEMO]
-        if (document.getStatus() != ApprovalStatus.APPROVED) {
+        if (document.getStatus() != ApprovalStatus.DRAFT && document.getStatus() != ApprovalStatus.REJECTED) {
             throw new IllegalStateException("Only DRAFT or REJECTED documents can be submitted for approval. Current status: " + document.getStatus());
         }
 
