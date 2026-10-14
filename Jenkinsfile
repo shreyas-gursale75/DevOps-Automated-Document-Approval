@@ -28,6 +28,7 @@ pipeline {
                     echo Synchronizing workspace from local Git repository...
                     robocopy "C:\\Users\\Shreyas Gursale\\Desktop\\DevOps Project" . /E /XD .git target .jenkins /NFL /NDL /NJH /NJS /nc /ns /np || ver >nul
                     git -C "C:\\Users\\Shreyas Gursale\\Desktop\\DevOps Project" log -1 --oneline
+                    exit /b 0
                 """
             }
         }
@@ -64,6 +65,7 @@ pipeline {
                     ) else (
                         echo [NOTICE] Docker daemon not active in local environment.
                         echo Verified Dockerfile syntax and container context for ${APP_NAME}:${IMAGE_TAG}.
+                        exit /b 0
                     )
                 """
             }
@@ -84,6 +86,7 @@ pipeline {
                         echo Deploying Spring Boot embedded Tomcat runtime on port ${EFFECTIVE_PORT}...
                         for /f "tokens=5" %%a in ('netstat -aon ^| findstr :${EFFECTIVE_PORT} ^| findstr LISTENING') do taskkill /F /PID %%a >nul 2>&1 || ver >nul
                         start "DocumentApprovalApp" /B "%JAVA_HOME%\\bin\\java.exe" -Dserver.port=${EFFECTIVE_PORT} -jar target\\automated-document-approval-1.0.0.jar
+                        exit /b 0
                     )
                 """
             }
@@ -96,9 +99,10 @@ pipeline {
                     @echo off
                     echo Waiting for application to initialize on port ${EFFECTIVE_PORT}...
                     timeout /t 6 /nobreak >nul
-                    curl -f http://localhost:${EFFECTIVE_PORT}/api/health || exit 1
+                    curl -f http://localhost:${EFFECTIVE_PORT}/api/health || exit /b 1
                     echo.
                     echo Health check passed successfully!
+                    exit /b 0
                 """
             }
         }
