@@ -23,7 +23,12 @@ pipeline {
         stage('Checkout') {
             steps {
                 echo 'Checking out source baseline from Git...'
-                checkout scm
+                bat """
+                    @echo off
+                    echo Synchronizing workspace from local Git repository...
+                    robocopy "C:\\Users\\Shreyas Gursale\\Desktop\\DevOps Project" . /E /XD .git target .jenkins /NFL /NDL /NJH /NJS /nc /ns /np || ver >nul
+                    git -C "C:\\Users\\Shreyas Gursale\\Desktop\\DevOps Project" log -1 --oneline
+                """
             }
         }
 
