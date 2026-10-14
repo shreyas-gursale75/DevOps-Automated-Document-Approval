@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  document-approval-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: automated-document-approval:v1.0.0
+    container_name: automated-document-approval
+    ports:
+      - "8080:8080"
+    environment:
+      - SERVER_PORT=8080
+      - SPRING_PROFILES_ACTIVE=prod
+      - JAVA_OPTS=-Xms64m -Xmx256m
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/api/health"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    labels:
+      com.devops.project: "Automated Controlled Document Version Approval System"
+      com.devops.environment: "Production"

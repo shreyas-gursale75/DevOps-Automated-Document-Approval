@@ -1,0 +1,11 @@
+target/*
+!target/*.jar
+.git/
+.gitignore
+.gemini/
+*.log
+docker-compose.yml
+Jenkinsfile
+jenkins_ci_job_config.xml
+jenkins_pipeline_job_config.xml
+scripts/

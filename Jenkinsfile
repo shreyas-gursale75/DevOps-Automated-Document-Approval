@@ -17,7 +17,7 @@ pipeline {
         JENKINS_NODE_COOKIE = 'dontKillMe'
         APP_NAME = 'automated-document-approval'
         IMAGE_TAG = "v${env.BUILD_NUMBER}"
-        DOCKER_REGISTRY = 'docker.io/myorg'
+        REGISTRY_HOST = 'localhost:5000'
         EFFECTIVE_PORT = "${params.DEPLOY_PORT ?: '8080'}"
     }
 
@@ -39,6 +39,7 @@ pipeline {
             steps {
                 bat """
                     @echo off
+                    echo Terminating any conflicting host processes on port ${EFFECTIVE_PORT}...
                     for /f "tokens=5" %%a in ('netstat -aon ^| findstr :${EFFECTIVE_PORT} ^| findstr LISTENING') do taskkill /F /PID %%a >nul 2>&1 || ver >nul
                     mvn test -Dtest=DocumentApprovalApplicationTests
                 """
@@ -52,63 +53,63 @@ pipeline {
 
         stage('Package Artefact') {
             steps {
-                echo 'Packaging application executable JAR for Tomcat runtime...'
+                echo 'Packaging application executable JAR...'
                 bat 'mvn package -DskipTests'
                 archiveArtifacts artifacts: '**/target/*.jar', fingerprint: true
             }
         }
 
-        stage('Container Image Build') {
+        stage('Docker Image Build & Registry Publish') {
             steps {
-                echo "Evaluating container runtime for ${APP_NAME}:${IMAGE_TAG}..."
+                echo "Building Docker container image ${APP_NAME}:${IMAGE_TAG} and tagging for ${REGISTRY_HOST}..."
                 bat """
                     @echo off
-                    docker info >nul 2>&1
-                    if %ERRORLEVEL% EQU 0 (
-                        echo Docker daemon active. Building Docker container image: ${APP_NAME}:${IMAGE_TAG}...
-                        docker build -t ${APP_NAME}:${IMAGE_TAG} -t ${APP_NAME}:latest .
-                    ) else (
-                        echo [NOTICE] Docker daemon not active in local environment.
-                        echo Verified Dockerfile syntax and container context for ${APP_NAME}:${IMAGE_TAG}.
-                        exit /b 0
+                    docker build -t ${APP_NAME}:${IMAGE_TAG} -t ${APP_NAME}:latest -t ${REGISTRY_HOST}/${APP_NAME}:${IMAGE_TAG} -t ${REGISTRY_HOST}/${APP_NAME}:latest .
+                    if %ERRORLEVEL% NEQ 0 (
+                        echo [ERROR] Docker build failed!
+                        exit /b 1
                     )
+                    echo Publishing versioned image to Docker Registry (${REGISTRY_HOST})...
+                    docker push ${REGISTRY_HOST}/${APP_NAME}:${IMAGE_TAG}
+                    docker push ${REGISTRY_HOST}/${APP_NAME}:latest
+                    echo Docker image published successfully to registry!
+                    exit /b 0
                 """
             }
         }
 
-        stage('Continuous Deployment (Tomcat/Docker)') {
+        stage('Continuous Deployment (Docker Container)') {
             steps {
-                echo "Deploying application to port ${EFFECTIVE_PORT} (Environment: ${params.ENVIRONMENT ?: 'dev'})..."
+                echo "Deploying fresh container ${APP_NAME}:${IMAGE_TAG} to port ${EFFECTIVE_PORT}..."
                 bat """
                     @echo off
-                    docker info >nul 2>&1
-                    if %ERRORLEVEL% EQU 0 (
-                        echo Deploying containerized application to port ${EFFECTIVE_PORT} via Docker...
-                        docker stop ${APP_NAME} 2>nul || ver >nul
-                        docker rm ${APP_NAME} 2>nul || ver >nul
-                        docker run -d --name ${APP_NAME} -p ${EFFECTIVE_PORT}:8080 ${APP_NAME}:latest
-                    ) else (
-                        echo Deploying Spring Boot embedded Tomcat runtime on port ${EFFECTIVE_PORT}...
-                        for /f "tokens=5" %%a in ('netstat -aon ^| findstr :${EFFECTIVE_PORT} ^| findstr LISTENING') do taskkill /F /PID %%a >nul 2>&1 || ver >nul
-                        set JENKINS_NODE_COOKIE=dontKillMe
-                        set BUILD_ID=dontKillMe
-                        start "DocumentApprovalApp" /B "%JAVA_HOME%\\bin\\java.exe" -Dserver.port=${EFFECTIVE_PORT} -jar target\\automated-document-approval-1.0.0.jar
-                        exit /b 0
+                    echo Cleaning up existing container if present...
+                    docker stop ${APP_NAME} >nul 2>&1 || ver >nul
+                    docker rm -f ${APP_NAME} >nul 2>&1 || ver >nul
+                    for /f "tokens=5" %%a in ('netstat -aon ^| findstr :${EFFECTIVE_PORT} ^| findstr LISTENING') do taskkill /F /PID %%a >nul 2>&1 || ver >nul
+                    
+                    echo Starting containerized deployment from local registry image...
+                    docker run -d --name ${APP_NAME} -p ${EFFECTIVE_PORT}:8080 ${REGISTRY_HOST}/${APP_NAME}:${IMAGE_TAG}
+                    if %ERRORLEVEL% NEQ 0 (
+                        echo [ERROR] Failed to start Docker container!
+                        exit /b 1
                     )
+                    echo Container launched successfully.
+                    exit /b 0
                 """
             }
         }
 
         stage('Health & Reliability Check') {
             steps {
-                echo 'Executing liveness and health verification...'
+                echo 'Executing container liveness and health verification...'
                 bat """
                     @echo off
-                    echo Waiting for application to initialize on port ${EFFECTIVE_PORT}...
+                    echo Waiting for containerized application to initialize on port ${EFFECTIVE_PORT}...
                     ping 127.0.0.1 -n 7 >nul
                     curl -f http://localhost:${EFFECTIVE_PORT}/api/health || exit /b 1
                     echo.
-                    echo Health check passed successfully!
+                    echo Container health check passed successfully!
                     exit /b 0
                 """
             }
@@ -116,7 +117,7 @@ pipeline {
 
         stage('Automated Acceptance Tests (Selenium E2E)') {
             steps {
-                echo 'Executing Selenium WebDriver E2E test suite against live environment...'
+                echo 'Executing Selenium WebDriver E2E test suite against containerized deployment...'
                 bat 'mvn test -Dtest=SeleniumE2ETests'
             }
             post {
@@ -125,7 +126,7 @@ pipeline {
                     archiveArtifacts artifacts: '**/target/screenshots/*.png', allowEmptyArchive: true
                 }
                 failure {
-                    echo '[QUALITY GATE BLOCKED] Acceptance tests failed! Deployment blocked.'
+                    echo '[QUALITY GATE BLOCKED] Acceptance tests failed on containerized deployment!'
                 }
             }
         }
@@ -133,10 +134,10 @@ pipeline {
 
     post {
         success {
-            echo "Pipeline successfully executed! Application is live on port ${EFFECTIVE_PORT}."
+            echo "Pipeline successfully executed! Container ${APP_NAME}:${IMAGE_TAG} is live on port ${EFFECTIVE_PORT}."
         }
         failure {
-            echo 'Pipeline failed. Automated deployment blocked.'
+            echo 'Pipeline failed. Automated container deployment blocked.'
         }
     }
 }

@@ -1,0 +1,26 @@
+# Multi-Stage Dockerfile for Automated Controlled Document Version Approval System
+# Stage 1: Build & Package with Maven
+FROM maven:3.9-eclipse-temurin-17 AS builder
+WORKDIR /app
+COPY pom.xml .
+RUN mvn dependency:go-offline -B
+COPY src ./src
+RUN mvn clean package -DskipTests
+
+# Stage 2: Production Container with JRE on Embedded Apache Tomcat
+FROM eclipse-temurin:17-jre-alpine
+LABEL maintainer="DevOps Team <devops@organization.com>"
+LABEL version="1.0.0"
+LABEL description="Automated Controlled Document Version Approval System (Multi-Stage Build)"
+
+WORKDIR /app
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+USER appuser
+
+COPY --from=builder /app/target/automated-document-approval-1.0.0.jar app.jar
+
+EXPOSE 8080
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+  CMD wget --quiet --tries=1 --spider http://localhost:8080/api/health || exit 1
+
+ENTRYPOINT ["java", "-Djava.security.egd=file:/dev/./urandom", "-jar", "app.jar"]
