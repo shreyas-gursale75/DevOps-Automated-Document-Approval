@@ -1,0 +1,60 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<project>
+  <description>Automated Controlled Document Version Approval System - Continuous Integration Build Job (Phase 7)</description>
+  <keepDependencies>false</keepDependencies>
+  <properties/>
+  <customWorkspace>C:\Users\Shreyas Gursale\Desktop\DevOps Project</customWorkspace>
+  <canRoam>true</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers>
+    <hudson.triggers.TimerTrigger>
+      <spec>H/15 * * * *</spec>
+    </hudson.triggers.TimerTrigger>
+  </triggers>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.BatchFile>
+      <command>
+@echo off
+set "JAVA_HOME=C:\Users\Shreyas Gursale\.tools\jdk17\jdk17.0.20_12"
+set "M2_HOME=C:\Users\Shreyas Gursale\.tools\maven\apache-maven-3.9.9"
+set "PATH=%JAVA_HOME%\bin;%M2_HOME%\bin;%PATH%"
+
+echo ======================================================
+echo [JENKINS CI] Starting Build and Test Pipeline
+echo Workspace: %WORKSPACE%
+echo Java Version:
+"%JAVA_HOME%\bin\java.exe" -version
+echo.
+echo Git Status Baseline:
+git status -s
+echo.
+echo Running Maven Clean, Test, and Package Lifecycle...
+echo ======================================================
+call "%M2_HOME%\bin\mvn.cmd" clean test package
+if %ERRORLEVEL% NEQ 0 (
+    echo [ERROR] Maven build or automated tests failed!
+    exit /b %ERRORLEVEL%
+)
+
+echo.
+echo [SUCCESS] Build and tests passed successfully!
+echo Artifact ready for archiving in target/
+      </command>
+    </hudson.tasks.BatchFile>
+  </builders>
+  <publishers>
+    <hudson.tasks.ArtifactArchiver>
+      <artifacts>target/*.jar</artifacts>
+      <allowEmptyArchive>false</allowEmptyArchive>
+      <onlyIfSuccessful>true</onlyIfSuccessful>
+      <fingerprint>true</fingerprint>
+      <defaultExcludes>true</defaultExcludes>
+      <caseSensitive>true</caseSensitive>
+      <followSymlinks>false</followSymlinks>
+    </hudson.tasks.ArtifactArchiver>
+  </publishers>
+  <buildWrappers/>
+</project>
