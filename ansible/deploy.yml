@@ -1,0 +1,60 @@
+---
+- name: Automated Provisioning and Deployment for Document Approval System
+  hosts: app_servers
+  gather_facts: yes
+  vars:
+    app_name: "automated-document-approval"
+    app_version: "1.0.0"
+    app_jar_src: "../target/automated-document-approval-1.0.0.jar"
+    deploy_dir: "/opt/devops-app"
+    app_port: 8080
+
+  tasks:
+    - name: 1. Ensure target application directory structure exists
+      file:
+        path: "{{ deploy_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: 2. Ensure log directory exists
+      file:
+        path: "{{ deploy_dir }}/logs"
+        state: directory
+        mode: '0755'
+
+    - name: 3. Verify Java 17 runtime prerequisite is present
+      command: java -version
+      register: java_check
+      changed_when: false
+
+    - name: 4. Copy packaged Spring Boot Tomcat JAR artifact
+      copy:
+        src: "{{ app_jar_src }}"
+        dest: "{{ deploy_dir }}/{{ app_name }}.jar"
+        mode: '0755'
+
+    - name: 5. Ensure application service is running
+      shell: "nohup java -jar {{ deploy_dir }}/{{ app_name }}.jar > {{ deploy_dir }}/logs/app.log 2>&1 &"
+      async: 60
+      poll: 0
+
+    - name: 6. Wait for Tomcat server to bind to port
+      wait_for:
+        port: "{{ app_port }}"
+        delay: 5
+        timeout: 60
+
+    - name: 7. Idempotency & Reliability Health Check Probe
+      uri:
+        url: "http://localhost:{{ app_port }}/api/health"
+        method: GET
+        status_code: 200
+        return_content: yes
+      register: health_result
+      until: health_result.status == 200
+      retries: 6
+      delay: 5
+
+    - name: 8. Display deployment verification summary
+      debug:
+        msg: "Application successfully provisioned! Status: {{ health_result.json.status }}, Server: {{ health_result.json.server }}"
