@@ -1,0 +1,13 @@
+FROM alpine:latest
+
+# Install Ansible, Python, OpenSSH, OpenJDK 17, Curl, and Bash for complete configuration management
+RUN apk add --no-cache \
+    ansible \
+    curl \
+    openjdk17-jre \
+    bash \
+    py3-requests
+
+WORKDIR /ansible
+
+ENTRYPOINT ["ansible-playbook"]

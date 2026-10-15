@@ -1,0 +1,63 @@
+---
+- name: Automated Rollback and Recovery for Controlled Document Approval System
+  hosts: app_servers
+  gather_facts: no
+  vars:
+    app_name: "automated-document-approval"
+    app_version: "1.0.0"
+    deploy_dir: "/opt/devops-app"
+    app_port: 8080
+    service_user: "appuser"
+    service_group: "appgroup"
+
+  tasks:
+    - name: 1. Alert - Initiating Automated Rollback
+      debug:
+        msg: "CRITICAL ALERT: Health check failed on target node! Initiating automated rollback to previous stable release from {{ deploy_dir }}/backups"
+
+    - name: 2. Terminate unstable service instance
+      shell: "fuser -k {{ app_port }}/tcp || true"
+      changed_when: true
+
+    - name: 3. Restore stable release JAR from backups directory
+      copy:
+        src: "{{ deploy_dir }}/backups/{{ app_name }}-{{ app_version }}-backup.jar"
+        dest: "{{ deploy_dir }}/{{ app_name }}.jar"
+        remote_src: yes
+        owner: "{{ service_user }}"
+        group: "{{ service_group }}"
+        mode: '0755'
+
+    - name: 4. Update version marker to rollback state
+      copy:
+        content: "v{{ app_version }}-rollback-stable\n"
+        dest: "{{ deploy_dir }}/current_version.txt"
+        owner: "{{ service_user }}"
+        group: "{{ service_group }}"
+        mode: '0644'
+
+    - name: 5. Relaunch stable service instance
+      shell: "nohup su {{ service_user }} -s /bin/sh -c 'java -Djava.security.egd=file:/dev/./urandom -Dserver.port={{ app_port }} -jar {{ deploy_dir }}/{{ app_name }}.jar' > {{ deploy_dir }}/logs/app.log 2>&1 &"
+      async: 60
+      poll: 0
+
+    - name: 6. Wait for Tomcat port recovery
+      wait_for:
+        port: "{{ app_port }}"
+        delay: 3
+        timeout: 45
+
+    - name: 7. Verify post-rollback service health
+      uri:
+        url: "http://localhost:{{ app_port }}/api/health"
+        method: GET
+        status_code: 200
+        return_content: yes
+      register: rollback_health
+      until: rollback_health.status == 200
+      retries: 6
+      delay: 5
+
+    - name: 8. Rollback Verification Confirmation
+      debug:
+        msg: "Rollback SUCCESSFUL! Service restored to stable version. Health Status: {{ rollback_health.json.status }}, Server: {{ rollback_health.json.server }}"

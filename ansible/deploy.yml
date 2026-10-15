@@ -1,50 +1,107 @@
 ---
-- name: Automated Provisioning and Deployment for Document Approval System
+- name: Automated Provisioning and Deployment for Controlled Document Approval System
   hosts: app_servers
   gather_facts: yes
   vars:
     app_name: "automated-document-approval"
     app_version: "1.0.0"
-    app_jar_src: "../target/automated-document-approval-1.0.0.jar"
+    app_jar_src: "{{ playbook_dir }}/../target/automated-document-approval-1.0.0.jar"
     deploy_dir: "/opt/devops-app"
     app_port: 8080
+    service_user: "appuser"
+    service_group: "appgroup"
 
   tasks:
-    - name: 1. Ensure target application directory structure exists
-      file:
-        path: "{{ deploy_dir }}"
-        state: directory
-        mode: '0755'
+    - name: 1. Provision security system group
+      group:
+        name: "{{ service_group }}"
+        state: present
 
-    - name: 2. Ensure log directory exists
-      file:
-        path: "{{ deploy_dir }}/logs"
-        state: directory
-        mode: '0755'
+    - name: 2. Provision unprivileged application service user
+      user:
+        name: "{{ service_user }}"
+        group: "{{ service_group }}"
+        shell: /sbin/nologin
+        create_home: no
+        state: present
 
-    - name: 3. Verify Java 17 runtime prerequisite is present
+    - name: 3. Ensure target application directory structure exists
+      file:
+        path: "{{ item }}"
+        state: directory
+        owner: "{{ service_user }}"
+        group: "{{ service_group }}"
+        mode: '0755'
+      loop:
+        - "{{ deploy_dir }}"
+        - "{{ deploy_dir }}/logs"
+        - "{{ deploy_dir }}/backups"
+
+    - name: 4. Verify Java 17 runtime prerequisite is present
       command: java -version
       register: java_check
       changed_when: false
 
-    - name: 4. Copy packaged Spring Boot Tomcat JAR artifact
+    - name: 5a. Inspect existing active release artifact
+      stat:
+        path: "{{ deploy_dir }}/{{ app_name }}.jar"
+      register: previous_jar
+
+    - name: 5b. Archive active release to backup directory
+      copy:
+        src: "{{ deploy_dir }}/{{ app_name }}.jar"
+        dest: "{{ deploy_dir }}/backups/{{ app_name }}-{{ app_version }}-backup.jar"
+        remote_src: yes
+        owner: "{{ service_user }}"
+        group: "{{ service_group }}"
+        mode: '0755'
+      when: previous_jar.stat.exists
+
+    - name: 6. Deploy packaged Spring Boot application artifact
       copy:
         src: "{{ app_jar_src }}"
         dest: "{{ deploy_dir }}/{{ app_name }}.jar"
+        owner: "{{ service_user }}"
+        group: "{{ service_group }}"
         mode: '0755'
+      register: app_artifact
 
-    - name: 5. Ensure application service is running
-      shell: "nohup java -jar {{ deploy_dir }}/{{ app_name }}.jar > {{ deploy_dir }}/logs/app.log 2>&1 &"
+    - name: 7. Record current active deployment version
+      copy:
+        content: "v{{ app_version }}-release\n"
+        dest: "{{ deploy_dir }}/current_version.txt"
+        owner: "{{ service_user }}"
+        group: "{{ service_group }}"
+        mode: '0644'
+
+    - name: 8. Check existing service health status
+      uri:
+        url: "http://localhost:{{ app_port }}/api/health"
+        method: GET
+        status_code: 200
+      register: existing_health
+      failed_when: false
+      changed_when: false
+
+    - name: 9. Terminate prior instance if redeployment required
+      shell: "fuser -k {{ app_port }}/tcp || true"
+      when: (existing_health.status != 200) or (app_artifact.changed)
+      changed_when: true
+
+    - name: 10. Start Spring Boot application service as appuser
+      shell: "nohup su {{ service_user }} -s /bin/sh -c 'java -Djava.security.egd=file:/dev/./urandom -Dserver.port={{ app_port }} -jar {{ deploy_dir }}/{{ app_name }}.jar' > {{ deploy_dir }}/logs/app.log 2>&1 &"
       async: 60
       poll: 0
+      when: (existing_health.status != 200) or (app_artifact.changed)
 
-    - name: 6. Wait for Tomcat server to bind to port
+    - name: 11. Wait for Tomcat server to bind to port
       wait_for:
         port: "{{ app_port }}"
-        delay: 5
-        timeout: 60
+        delay: 2
+        timeout: 45
+      when: (existing_health.status != 200) or (app_artifact.changed)
 
-    - name: 7. Idempotency & Reliability Health Check Probe
+    - name: 12. Idempotency & Reliability Health Check Probe
       uri:
         url: "http://localhost:{{ app_port }}/api/health"
         method: GET
@@ -53,8 +110,8 @@
       register: health_result
       until: health_result.status == 200
       retries: 6
-      delay: 5
+      delay: 3
 
-    - name: 8. Display deployment verification summary
+    - name: 13. Display deployment verification summary
       debug:
-        msg: "Application successfully provisioned! Status: {{ health_result.json.status }}, Server: {{ health_result.json.server }}"
+        msg: "Application verified! Status: {{ health_result.json.status }}, Server: {{ health_result.json.server }}, Memory: {{ health_result.json.memory.usedMemoryMB }}MB"
