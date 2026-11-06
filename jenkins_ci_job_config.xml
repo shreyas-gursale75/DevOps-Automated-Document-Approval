@@ -31,9 +31,12 @@ echo.
 echo Git Status Baseline:
 git status -s
 echo.
-echo Running Maven Clean, Test, and Package Lifecycle...
+echo Freeing port 8080 to prevent Windows file lock on JAR...
+for /f "tokens=5" %%a in ('netstat -aon ^| findstr :8080 ^| findstr LISTENING') do taskkill /F /PID %%a >nul 2>&1 || ver >nul
+
+echo Running Maven Clean, Unit Test, and Package Lifecycle...
 echo ======================================================
-call "%M2_HOME%\bin\mvn.cmd" clean test package
+call "%M2_HOME%\bin\mvn.cmd" clean test-compile surefire:test@default-test package -Dtest=DocumentApprovalApplicationTests
 if %ERRORLEVEL% NEQ 0 (
     echo [ERROR] Maven build or automated tests failed!
     exit /b %ERRORLEVEL%

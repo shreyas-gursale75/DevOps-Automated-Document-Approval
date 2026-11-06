@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DevOps Project Poster - Automated Controlled Document Approval System</title>
+  <style>
+    :root {
+      --bg: #0b1120;
+      --card-bg: #152033;
+      --border-accent: #1e293b;
+      --border-card: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --cyan: #38bdf8;
+      --green: #34d399;
+      --amber: #fbbf24;
+      --purple: #c084fc;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: #060913;
+      color: var(--text-main);
+      margin: 0;
+      padding: 16px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .poster-container {
+      width: 760px;
+      max-width: 100%;
+      background: linear-gradient(160deg, #090e1a 0%, #0f172a 100%);
+      border: 1.5px solid var(--cyan);
+      border-radius: 14px;
+      padding: 18px 22px;
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.8), 0 0 25px rgba(56, 189, 248, 0.12);
+    }
+
+    /* Top Banner */
+    .header-banner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-card);
+      padding-bottom: 12px;
+      margin-bottom: 12px;
+    }
+
+    .header-title-area h1 {
+      font-size: 21px;
+      font-weight: 800;
+      color: var(--text-main);
+      letter-spacing: -0.3px;
+      line-height: 1.2;
+    }
+
+    .header-title-area h1 span {
+      color: var(--cyan);
+    }
+
+    .header-title-area p {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      font-weight: 500;
+      margin-top: 3px;
+    }
+
+    .student-badge-card {
+      background: rgba(21, 32, 51, 0.9);
+      border: 1px solid var(--cyan);
+      border-radius: 8px;
+      padding: 6px 14px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    .student-badge-card .name {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--cyan);
+    }
+
+    .student-badge-card .roll {
+      font-size: 11.5px;
+      color: var(--text-main);
+      margin-top: 1px;
+    }
+
+    .student-badge-card .dept {
+      font-size: 9.5px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 1px;
+    }
+
+    /* 2-Column Overview Grid */
+    .poster-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-card);
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+
+    .card-header .icon-circle {
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+    }
+
+    .card-header h2 {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .card ul {
+      list-style-type: none;
+    }
+
+    .card li {
+      font-size: 10.5px;
+      line-height: 1.4;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+      position: relative;
+      padding-left: 12px;
+    }
+
+    .card li:last-child {
+      margin-bottom: 0;
+    }
+
+    .card li::before {
+      content: "•";
+      color: var(--cyan);
+      font-size: 14px;
+      position: absolute;
+      left: 0;
+      top: -2px;
+    }
+
+    .card li strong {
+      color: var(--text-main);
+    }
+
+    /* Pipeline Section (Portrait) */
+    .pipeline-section {
+      background: rgba(21, 32, 51, 0.7);
+      border: 1px solid var(--border-card);
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 12px;
+    }
+
+    .pipeline-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 10px;
+    }
+
+    .pipeline-header h2 {
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--cyan);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .pipeline-header p {
+      font-size: 10.5px;
+      color: var(--text-muted);
+    }
+
+    /* 7 Steps - Arranged vertically/compactly */
+    .pipeline-flow-vertical {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .pipeline-step-row {
+      display: flex;
+      align-items: center;
+      background: #0f172a;
+      border: 1px solid var(--border-card);
+      border-radius: 6px;
+      padding: 6px 10px;
+      gap: 10px;
+    }
+
+    .step-number-badge {
+      width: 22px;
+      height: 22px;
+      line-height: 20px;
+      text-align: center;
+      border-radius: 50%;
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--cyan);
+      font-weight: 800;
+      font-size: 10.5px;
+      border: 1px solid var(--cyan);
+      flex-shrink: 0;
+    }
+
+    .step-name-block {
+      width: 140px;
+      flex-shrink: 0;
+    }
+
+    .step-name-block .step-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-main);
+      line-height: 1.2;
+    }
+
+    .step-desc-text {
+      flex-grow: 1;
+      font-size: 10px;
+      color: var(--text-muted);
+      line-height: 1.35;
+    }
+
+    .step-tool-pill {
+      background: rgba(21, 32, 51, 0.9);
+      border: 1px solid var(--border-card);
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-size: 9.5px;
+      font-weight: 600;
+      color: var(--green);
+      flex-shrink: 0;
+    }
+
+    /* Bottom 3 Highlights */
+    .highlights-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .highlight-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-card);
+      border-radius: 8px;
+      padding: 8px 10px;
+    }
+
+    .highlight-card h3 {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--amber);
+      margin-bottom: 3px;
+    }
+
+    .highlight-card p {
+      font-size: 9.5px;
+      color: var(--text-muted);
+      line-height: 1.35;
+    }
+
+    /* Portrait Print Styling */
+    @page {
+      size: A4 portrait;
+      margin: 8mm;
+    }
+
+    @media print {
+      html, body {
+        width: 100% !important;
+        height: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #060913 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        overflow: hidden !important;
+      }
+
+      .poster-container {
+        width: 100% !important;
+        max-width: 100% !important;
+        height: 100% !important;
+        border: 1px solid var(--cyan) !important;
+        box-shadow: none !important;
+        page-break-inside: avoid !important;
+        page-break-after: avoid !important;
+        page-break-before: avoid !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="poster-container">
+    
+    <!-- Top Banner -->
+    <header class="header-banner">
+      <div class="header-title-area">
+        <h1>Automated Controlled Document <span>Approval System</span></h1>
+        <p>Continuous Integration & Continuous Delivery Pipeline with Docker & Selenium Quality Gates</p>
+      </div>
+      <div class="student-badge-card">
+        <div class="name">Shreyas Gursale</div>
+        <div class="roll">Roll No: 23102C0061</div>
+        <div class="dept">DevOps Project</div>
+      </div>
+    </header>
+
+    <!-- Mid Grid: Problem Statement & System Architecture -->
+    <div class="poster-grid">
+      <div class="card">
+        <div class="card-header">
+          <div class="icon-circle" style="background: rgba(56, 189, 248, 0.15); color: var(--cyan);">🎯</div>
+          <h2>Problem Statement & Objectives</h2>
+        </div>
+        <ul>
+          <li><strong>Compliance Enforcement:</strong> Guarantees strict GxP & ISO 9001 document version control.</li>
+          <li><strong>Zero Manual Friction:</strong> Replaces manual deployments with automated, reproducible pipelines.</li>
+          <li><strong>Immutable Audit Trail:</strong> Logs every creation, submission, and reviewer sign-off with timestamps.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="icon-circle" style="background: rgba(52, 211, 153, 0.15); color: var(--green);">⚙️</div>
+          <h2>System Architecture & Tech Stack</h2>
+        </div>
+        <ul>
+          <li><strong>Application Stack:</strong> Spring Boot 3.2.5 on Java 17 LTS with embedded Apache Tomcat 10.</li>
+          <li><strong>Build & CI/CD:</strong> Maven 3.9.9 + 2-Tier Jenkins (Fast CI feedback + Declarative CD pipeline).</li>
+          <li><strong>Containers & Quality Gates:</strong> Docker 29, private registry (:5000), and Selenium WebDriver.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Center Section: 7-Stage Pipeline Flowchart (Portrait List) -->
+    <section class="pipeline-section">
+      <div class="pipeline-header">
+        <h2>Continuous Integration & Continuous Delivery Pipeline</h2>
+        <p>Declarative Jenkinsfile with Automated Quality Gates</p>
+      </div>
+
+      <div class="pipeline-flow-vertical">
+        
+        <!-- Step 1 -->
+        <div class="pipeline-step-row">
+          <div class="step-number-badge">1</div>
+          <div class="step-name-block"><div class="step-title">SCM Checkout</div></div>
+          <div class="step-desc-text">Synchronizes latest repository baseline from Git with commit tracking.</div>
+          <div class="step-tool-pill">Git SCM</div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="pipeline-step-row">
+          <div class="step-number-badge">2</div>
+          <div class="step-name-block"><div class="step-title">Build & Unit Tests</div></div>
+          <div class="step-desc-text">Compiles Java 17 bytecode & executes JUnit 5 test suite via Surefire.</div>
+          <div class="step-tool-pill">Maven / JDK 17</div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="pipeline-step-row">
+          <div class="step-number-badge">3</div>
+          <div class="step-name-block"><div class="step-title">Package Artefact</div></div>
+          <div class="step-desc-text">Builds production-ready fat JAR & records Jenkins build fingerprint.</div>
+          <div class="step-tool-pill">Spring Boot JAR</div>
+        </div>
+
+        <!-- Step 4 -->
+        <div class="pipeline-step-row">
+          <div class="step-number-badge">4</div>
+          <div class="step-name-block"><div class="step-title">Dockerize Image</div></div>
+          <div class="step-desc-text">Packages Alpine JRE container running under non-root appuser.</div>
+          <div class="step-tool-pill">Docker Engine</div>
+        </div>
+
+        <!-- Step 5 -->
+        <div class="pipeline-step-row">
+          <div class="step-number-badge">5</div>
+          <div class="step-name-block"><div class="step-title">Registry Push</div></div>
+          <div class="step-desc-text">Publishes versioned image tags (v2, latest) to internal private registry.</div>
+          <div class="step-tool-pill">Registry :5000</div>
+        </div>
+
+        <!-- Step 6 -->
+        <div class="pipeline-step-row">
+          <div class="step-number-badge">6</div>
+          <div class="step-name-block"><div class="step-title">Deploy Container</div></div>
+          <div class="step-desc-text">Stops obsolete containers, frees port 8080 & launches new release.</div>
+          <div class="step-tool-pill">Docker Run</div>
+        </div>
+
+        <!-- Step 7 -->
+        <div class="pipeline-step-row">
+          <div class="step-number-badge">7</div>
+          <div class="step-name-block"><div class="step-title">Selenium E2E Gate</div></div>
+          <div class="step-desc-text">Pings /api/health probe & executes 5 headless browser user journeys.</div>
+          <div class="step-tool-pill">Selenium Chrome</div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Bottom 3 Highlights -->
+    <div class="highlights-grid">
+      <div class="highlight-card">
+        <h3>🔒 Security & Governance</h3>
+        <p>4-State transition: <strong>DRAFT ➔ PENDING ➔ APPROVED ➔ RELEASED</strong> with semantic versioning and append-only audit logs.</p>
+      </div>
+      <div class="highlight-card">
+        <h3>⚡ Resilience & Self-Healing</h3>
+        <p>Automated pre-build socket hook frees port 8080 processes, preventing Windows JAR file-locking errors during clean builds.</p>
+      </div>
+      <div class="highlight-card">
+        <h3>📊 Measurable Results</h3>
+        <p>Sub-3-minute release cycle, 100% reproducible container deployments, and screenshot audit artifacts archived in Jenkins.</p>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>
